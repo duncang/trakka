@@ -40,6 +40,8 @@ int main(int argc, char *argv[])
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
+    char sql_query[255];
+
     /* setup signal handlers */
     signal(SIGHUP,  HandleSignal);
     signal(SIGKILL, HandleSignal);
@@ -94,15 +96,7 @@ int main(int argc, char *argv[])
       exit(1);
     }  
 
-    if (mysql_query(con, "SELECT * from icao_codes WHERE tail_num='VH-AAA'")) 
-    {
-      fprintf(stderr, "%s\n", mysql_error(con));
-      mysql_close(con);
-      exit(1);
-    }
-
-
-        
+       
 
     while (quit == 0)
     {
@@ -221,11 +215,21 @@ int main(int argc, char *argv[])
 
                 }
 
-                printf("Decoded message_type (%d): id: %lx lat: %lf long:%lf height:%f\n", message_type, icao_id, ac_lat, ac_long, ac_height);
+                printf("Decoded message_type (%d): id: %lx (%ld) lat: %lf long:%lf height:%f\n", message_type, icao_id, icao_id, ac_lat, ac_long, ac_height);
+                sprintf(sql_query, "INSERT INTO reports (icao_id, latitude, longitude, height) VALUES (%ld, %lf, %lf, %f)", icao_id, ac_lat, ac_long, ac_height);
+
+                printf("SQL: %s\n", sql_query);
 
 
-                /// INSERT INTO icao_codes (icao_id, tail_num) values (%s, %s)
-                
+                /// INSERT INTO icao_codes (icao_id, tail_num) values (%s, %s)   
+                if (mysql_query(con, sql_query)) 
+                {
+                  fprintf(stderr, "%s\n", mysql_error(con));
+                  quit = 1;
+                }
+
+
+
                 break;
             case 4:
                 // airborne velocity 
